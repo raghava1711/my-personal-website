@@ -43,10 +43,19 @@ export async function ensureSeedData() {
       })
       .returning({ id: users.id });
     userId = created.id;
-  } else {
-    const [owner] = await db.select({ id: users.id }).from(users).limit(1);
-    userId = owner.id;
-  }
+ } else {
+  const [owner] = await db.select({ id: users.id }).from(users).limit(1);
+
+  await db
+    .update(users)
+    .set({
+      email: adminEmail,
+      passwordHash: await hashPassword(adminPassword),
+    })
+    .where(eq(users.id, owner.id));
+
+  userId = owner.id;
+}
 
   const existingFolders = await db.select({ value: count() }).from(folders);
   if ((existingFolders[0]?.value ?? 0) === 0) {
